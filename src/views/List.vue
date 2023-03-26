@@ -10,7 +10,7 @@
                 </div>
             </div>
             <div class="right">
-                <button class="selectall">
+                <button class="selectall" @click="onSelectAll()">
                     全选
                 </button>
                 <button class="addlist" @click='onAdd'>
@@ -21,14 +21,29 @@
         <!-- 条目 -->
         <div class="content">
             <ul>
-                <li v-for="item in todoList" :key="item.id">
+                <!-- eslint-disable-next-line -->
+                <li v-for="(item, index) in todoList" :key="item.id">
                     <div class="left">
-                        <input type="checkbox" name="" id="">
-                        <input type="text" placeholder="请点击上方的添加按钮添加事件" v-model="item.text">
+                        <!-- 复选框 -->
+                        <input 
+                        type="checkbox" 
+                        @click="onSelected(index, item.id)"
+                        :checked="item.isCheck"
+                        >
+                        <!-- input输入框 -->
+                        <input 
+                        type="text" 
+                        placeholder="请点击上方的添加按钮添加事件" 
+                        v-model="item.text"
+                        :disabled='item.isCheck'
+                        :class="item.isCheck ? 'line-through' : ''"
+                        @blur="onBlur"
+                         ref='inputBox'
+                        >
                     </div>
                     <div class="right">
                     <div class="time">{{item.time}}</div>
-                        <button class="del">
+                        <button class="del" @click="onDelete(index, item.id)">
                             删除
                         </button>
                     </div>
@@ -45,20 +60,65 @@ import dayjs from 'dayjs'
         name:'Title',
         data(){
             return{
-                todoList:[]
+                todoList:[],
+            }
+        },
+        // 获取本地存储
+        created(){
+            if(this.todoList){
+                this.todoList = JSON.parse(window.localStorage.getItem('ListTodo'))
+            }else{
+                this.todoList = [{
+                    id: nanoid(),
+                    isCheck: false, // 是否选中
+                    text: '',
+                    time: dayjs().format('YY-MM-DD HH:MM'),
+                }]
             }
         },
         methods:{
             // 添加功能
             onAdd(){
-                this.todoList.push({
+                this.todoList.unshift({
                     id: nanoid(),
                     isCheck: false, // 是否选中
                     text: '',
-                    time: dayjs().format('YY-MM-DD HH:MM'),
+                    time: dayjs().format('YY-MM-DD hh:mm'),
+                })
+                this.$nextTick(()=>{
+                    this.$refs.inputBox[this.todoList.length - 1].focus()
                 })
             },
-
+            // 删除功能
+            onDelete(index, id){
+                if(this.todoList[index].id === id){
+                    this.todoList.splice(index, 1)
+                    this.storage()
+                }
+            },
+            // 单选功能
+            onSelected(index, id){
+                if(this.todoList[index].id === id){
+                    this.todoList[index].isCheck = !this.todoList[index].isCheck
+                    console.log(this.todoList[index].isCheck)
+                    this.storage()
+                }
+            },
+            // 全选功能
+            onSelectAll(){
+                this.todoList.forEach(item => {
+                    item.isCheck = !item.isCheck
+                    this.storage()
+                });
+            },
+            // 本地存储
+            storage(){
+                window.localStorage.setItem('ListTodo', JSON.stringify(this.todoList))
+            },
+            // 输入完毕
+            onBlur(){
+                this.storage()
+            }
         }
     }
 </script>
@@ -162,4 +222,8 @@ import dayjs from 'dayjs'
             }
         }
     }
+    .line-through{
+                    color: gray;
+                    text-decoration: line-through white;
+                }
 </style>
